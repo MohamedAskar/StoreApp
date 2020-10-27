@@ -4,12 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:store/settings_ui/cupertino_settings_section.dart';
-import 'package:store/settings_ui/settings_tile.dart';
 
 // ignore: must_be_immutable
 class SettingsSection extends StatelessWidget {
   final String title;
-  final List<SettingsTile> tiles;
+  final List<dynamic> tiles;
   bool showBottomDivider = false;
 
   SettingsSection({

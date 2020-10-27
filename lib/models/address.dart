@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-class Address {
+enum AddressType { Home, Office }
+
+class Address with ChangeNotifier {
   final String id;
   final String city;
   final String floor;
@@ -8,17 +10,17 @@ class Address {
   final String fullName;
   final String landmark;
   final String building;
-  final String apartment;
+  final AddressType type;
   final String governorate;
   final String mobileNumber;
 
   Address({
-    this.id,
     this.floor,
     this.landmark,
     this.building,
-    this.apartment,
+    @required this.id,
     @required this.city,
+    @required this.type,
     @required this.street,
     @required this.fullName,
     @required this.governorate,

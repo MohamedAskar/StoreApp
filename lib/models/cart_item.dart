@@ -1,6 +1,6 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
-class CartItem {
+class CartItem with ChangeNotifier {
   final String id;
   final String size;
   final String name;

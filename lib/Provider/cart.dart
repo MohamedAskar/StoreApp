@@ -1,94 +1,123 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:store/models/cart_item.dart';
 
 class Cart with ChangeNotifier {
-  Map<String, CartItem> _items = {};
+  final Firestore _firestore = Firestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  List<CartItem> _cartItems = [];
+  double _totalAmount = 0.0;
+  int _totalQuantity = 0;
 
-  Map<String, CartItem> get items {
-    return {..._items};
-  }
-
-  int get itemCount {
-    return _items.length;
+  List<CartItem> get cartItems {
+    return [..._cartItems];
   }
 
   double get totalAmount {
-    double total = 0.0;
-    _items.forEach((key, cartItem) {
-      total += cartItem.price * cartItem.quantity;
-    });
-    return total;
+    return double.parse(_totalAmount.toStringAsFixed(2));
   }
 
   int get totalQuantity {
-    int subtotal = 0;
-    _items.forEach((key, cartItem) {
-      subtotal += cartItem.quantity;
-    });
-    return subtotal;
+    return _totalQuantity;
   }
 
-  void addItem(
-      {String id,
-      double price,
+  Future<void> addCartItem(
+      {double price,
+      String id,
       String name,
       String image,
       int quantityWanted,
-      String size}) {
-    if (_items.containsKey(id)) {
-      _items.update(
-          id,
-          (existingItem) => CartItem(
-                id: existingItem.id,
-                price: existingItem.price,
-                name: existingItem.name,
-                size: existingItem.size,
-                quantity: existingItem.quantity + quantityWanted,
-                image: existingItem.image,
-              ));
+      String size}) async {
+    final user = await _auth.currentUser();
+    final userCartRef = _firestore
+        .collection('Users')
+        .document(user.email)
+        .collection('CartItems');
+
+    final docRef = userCartRef.document(id);
+
+    final doc = await docRef.get();
+
+    if (doc.exists) {
+      if (doc.data['size'] == size) {
+        docRef.updateData({
+          'quantity': doc.data['quantity'] + quantityWanted,
+          'size': size,
+        });
+      } else {
+        docRef.setData({
+          'price': price,
+          'name': name,
+          'image': image,
+          'quantity': quantityWanted,
+          'size': size,
+        });
+      }
     } else {
-      _items.putIfAbsent(
-          id,
-          () => CartItem(
-                id: id,
-                price: price,
-                name: name,
-                quantity: quantityWanted,
-                image: image,
-                size: size,
-              ));
+      docRef.setData({
+        'price': price,
+        'name': name,
+        'image': image,
+        'quantity': quantityWanted,
+        'size': size,
+      });
     }
+  }
+
+  Future<void> fetchCartItems() async {
+    List<CartItem> loadedCartItems = [];
+    double totalAmountLoaded = 0.0;
+    int totalQuantityLoaded = 0;
+    final user = await _auth.currentUser();
+    final userRef = _firestore.collection('Users').document(user.email);
+
+    await userRef.collection('CartItems').getDocuments().then(
+        (QuerySnapshot snapshot) => snapshot.documents.forEach((cartItem) {
+              loadedCartItems.add(CartItem(
+                  id: cartItem.documentID,
+                  image: cartItem.data['image'],
+                  name: cartItem.data['name'],
+                  price: cartItem.data['price'],
+                  quantity: cartItem.data['quantity'],
+                  size: cartItem.data['size']));
+
+              totalAmountLoaded +=
+                  (cartItem.data['price'] * cartItem.data['quantity']);
+              totalQuantityLoaded += cartItem.data['quantity'];
+            }));
+    _cartItems = loadedCartItems;
+    _totalAmount = totalAmountLoaded;
+    _totalQuantity = totalQuantityLoaded;
     notifyListeners();
   }
 
-  void removeItem(String id) {
-    _items.remove(id);
-    notifyListeners();
+  Future<void> placeOrder() async {
+    final user = await _auth.currentUser();
+    final cartItems = _firestore
+        .collection('Users')
+        .document(user.email)
+        .collection('CartItems');
+    cartItems.getDocuments().then((QuerySnapshot snapshot) {
+      for (var cartItem in snapshot.documents) {
+        cartItems.document(cartItem.documentID).delete();
+      }
+    });
   }
 
-  void removeSingleItem(String id) {
-    if (!_items.containsKey(id)) {
-      return;
-    }
-    if (_items[id].quantity > 1) {
-      _items.update(
-          id,
-          (existingCardItem) => CartItem(
-                id: existingCardItem.id,
-                image: existingCardItem.image,
-                size: existingCardItem.size,
-                price: existingCardItem.price,
-                quantity: existingCardItem.quantity - 1,
-                name: existingCardItem.name,
-              ));
-    } else {
-      _items.remove(id);
-    }
+  Future<void> deleteCartItem(CartItem item) async {
+    _cartItems.remove(item);
+    final user = await _auth.currentUser();
+    final userCartRef = _firestore.collection('Users').document(user.email);
+    final docRef = userCartRef.collection('CartItems').document(item.id);
+
+    docRef.delete();
+
     notifyListeners();
   }
 
   void clear() {
-    _items = {};
+    _cartItems = [];
     notifyListeners();
   }
 }

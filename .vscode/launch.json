@@ -5,8 +5,7 @@
       "version": "0.2.0",
       "configurations": [
             {
-                  "name": "Flutter",
-                  "program": "lib/main.dart",
+                  "name": "store",
                   "request": "launch",
                   "type": "dart"
             }

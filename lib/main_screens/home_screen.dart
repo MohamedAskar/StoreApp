@@ -1,13 +1,15 @@
 import 'package:animations/animations.dart';
+import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_snake_navigationbar/flutter_snake_navigationbar.dart';
 import 'package:flutter_statusbarcolor/flutter_statusbarcolor.dart';
 import 'package:provider/provider.dart';
 import 'package:store/Provider/cart.dart';
-import 'package:store/store_controller.dart';
-import 'package:store/widgets/badge.dart';
+import 'package:store/screens/store/cart_screen.dart';
+import 'package:store/widgets/store/store_controller.dart';
 
 class StoreHome extends StatefulWidget {
+  static const routeName = '/store-home';
   @override
   _StoreHomeState createState() => _StoreHomeState();
 }
@@ -20,9 +22,10 @@ class _StoreHomeState extends State<StoreHome> {
 
   @override
   Widget build(BuildContext context) {
-    print(selectedTab);
     FlutterStatusbarcolor.setStatusBarColor(Colors.white);
     FlutterStatusbarcolor.setStatusBarWhiteForeground(false);
+    // ignore: unused_local_variable
+    final cartItem = Provider.of<Cart>(context).fetchCartItems();
     return DefaultTabController(
       length: 5,
       child: Scaffold(
@@ -72,94 +75,71 @@ class _StoreHomeState extends State<StoreHome> {
                         TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.favorite_border),
+                icon: Badge(
+                  child: Icon(Icons.favorite_border),
+                  showBadge: true,
+                  animationType: BadgeAnimationType.slide,
+                  toAnimate: true,
+                ),
                 // ignore: deprecated_member_use
                 title: Text('WishList',
                     style:
                         TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person),
+                icon: Icon(Icons.person_outline),
                 // ignore: deprecated_member_use
-                title: Text('Deals',
+                title: Text('Account',
                     style:
                         TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
               )
             ],
           ),
-          // BottomNavyBar(
-          //   showElevation: false,
-          //   containerHeight: kToolbarHeight,
-          //   onItemSelected: (index) {
-          //     setState(() {
-          //       _selectedIndex = index;
-          //       selectedTab = buttons[_selectedIndex];
-          //     });
-          //   },
-          //   selectedIndex: _selectedIndex,
-          //   items: [
-          //     BottomNavyBarItem(
-          //         icon: Icon(
-          //           Icons.home_outlined,
-          //           size: 30,
-          //         ),
-          //         title: Text('Home'),
-          //         textAlign: TextAlign.center,
-          //         inactiveColor: Colors.black,
-          //         activeColor: Colors.black),
-          //     BottomNavyBarItem(
-          //         icon: Icon(
-          //           Icons.search,
-          //           size: 30,
-          //         ),
-          //         title: Text('Search'),
-          //         textAlign: TextAlign.center,
-          //         inactiveColor: Colors.black,
-          //         activeColor: Colors.pink[200]),
-          //     BottomNavyBarItem(
-          //         icon: Icon(
-          //           Icons.loyalty_outlined,
-          //           size: 30,
-          //         ),
-          //         title: Text('Deals'),
-          //         textAlign: TextAlign.center,
-          //         inactiveColor: Colors.black,
-          //         activeColor: Colors.teal),
-          //     BottomNavyBarItem(
-          //         icon: Icon(
-          //           Icons.favorite_border,
-          //           size: 30,
-          //         ),
-          //         title: Text('WishList'),
-          //         textAlign: TextAlign.center,
-          //         inactiveColor: Colors.black,
-          //         activeColor: Colors.indigoAccent),
-          //     BottomNavyBarItem(
-          //         icon: Center(
-          //           child: CircleAvatar(
-          //             radius: 15,
-          //             backgroundImage: AssetImage('assets/images/picture.jpg'),
-          //           ),
-          //         ),
-          //         title: Text('Profile'),
-          //         textAlign: TextAlign.center,
-          //         inactiveColor: Colors.black,
-          //         activeColor: Colors.blue[300]),
-          //   ],
-          // ),
           appBar: AppBar(
             actions: [
-              selectedTab == 'Search'
-                  ? SizedBox()
-                  : Consumer<Cart>(
-                      builder: (_, cart, ch) {
-                        return Badge(value: cart.totalQuantity);
-                      },
-                    )
+              Visibility(
+                visible: (selectedTab != 'Search'),
+                child: Consumer<Cart>(
+                  builder: (_, cart, ch) {
+                    return Badge(
+                      position: BadgePosition.topRight(top: 8, right: 6),
+                      badgeContent: Text(
+                        '${Provider.of<Cart>(context).totalQuantity}',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13),
+                      ),
+                      badgeColor: Colors.black,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.shopping_bag_outlined,
+                          color: Colors.black,
+                          size: 28,
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(PageRouteBuilder(
+                              transitionDuration:
+                                  const Duration(milliseconds: 150),
+                              opaque: false,
+                              pageBuilder: (_, animation1, __) {
+                                return SlideTransition(
+                                    position: Tween(
+                                            begin: Offset(1.0, 0.0),
+                                            end: Offset(0.0, 0.0))
+                                        .animate(animation1),
+                                    child: CartScreen());
+                              }));
+                        },
+                      ),
+                    );
+                  },
+                ),
+              )
             ],
             title: Image.asset(
               'assets/images/logo.png',
-              height: 70,
+              height: 35,
             ),
             bottom: selectedTab == 'Home'
                 ? TabBar(
